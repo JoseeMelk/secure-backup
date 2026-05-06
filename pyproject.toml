@@ -1,0 +1,26 @@
+[project]
+name = "secure-backup"
+version = "0.1.0"
+description = "CLI for local file encryption and decryption"
+authors = [
+    { name = "JoseeMelk" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "cryptography"
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["python"]
+addopts = "-v"
+
+[tool.setuptools]
+package-dir = {"" = "python"}
+
+[tool.setuptools.packages.find]
+where = ["python"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest"
+]
