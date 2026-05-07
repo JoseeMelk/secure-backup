@@ -4,8 +4,8 @@ import os
 
 from secure_backup.kdf import generate_salt, derive_key
 from secure_backup.crypto import generate_nonce, encrypt_bytes, decrypt_bytes
-
-MAGIC = b"SB01"
+from secure_backup.formats.sb01 import write_sb01, read_sb01
+from cryptography.exceptions import InvalidTag
 
 
 def encrypt_file(input_path, output_path):
@@ -29,12 +29,13 @@ def encrypt_file(input_path, output_path):
 
     ciphertext, tag = encrypt_bytes(key, plaintext, nonce)
 
-    with open(output_path, "wb") as f:
-        f.write(MAGIC)
-        f.write(salt)
-        f.write(nonce)
-        f.write(tag)
-        f.write(ciphertext)
+    write_sb01(
+        output_path,
+        salt,
+        nonce,
+        tag,
+        ciphertext
+    )
 
     print(f"Encrypted → {output_path}")
 
@@ -46,23 +47,22 @@ def decrypt_file(input_path, output_path):
 
     password = getpass.getpass("Password: ")
 
-    with open(input_path, "rb") as f:
-        magic = f.read(4)
+    try:
+        data = read_sb01(input_path)
+    except ValueError:
+        print("Invalid file format")
+        return
 
-        if magic != MAGIC:
-            print("Invalid file format")
-            return
-
-        salt = f.read(16)
-        nonce = f.read(12)
-        tag = f.read(16)
-        ciphertext = f.read()
+    salt = data["salt"]
+    nonce = data["nonce"]
+    tag = data["tag"]
+    ciphertext = data["ciphertext"]
 
     key = derive_key(password, salt)
 
     try:
         plaintext = decrypt_bytes(key, nonce, ciphertext, tag)
-    except Exception:
+    except InvalidTag:
         print("Decryption failed (wrong password or corrupted file)")
         return
 
