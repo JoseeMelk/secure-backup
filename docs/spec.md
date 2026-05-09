@@ -1,207 +1,99 @@
-# Secure Backup File Format Specification
+# Secure Backup Specification
+---
 
-## Version: SB01
+## Overview
+
+Secure Backup defines a versioned encrypted file architecture for portable and authenticated file encryption.
+
+The project separates:
+
+- cryptographic logic
+- file format definitions
+- CLI behavior
+- implementation details
+
+This enables compatibility across multiple languages and implementations.
 
 ---
 
-## 1. Overview
+## Design Goals
 
-This document defines the binary file format used by Secure Backup for encrypted files (`.enc`).
-
-The format is designed to be:
-
-* Self-contained (no external metadata required)
-* Secure (confidentiality + integrity)
-* Portable across implementations (Python, C++, etc.)
-* Stream-friendly (future support)
+- Self-contained encrypted files
+- Authenticated encryption
+- Stable binary protocols
+- Cross-language interoperability
+- Future streaming support
+- Extensible metadata system
 
 ---
 
-## 2. File Structure
+## Cryptographic Architecture
 
-All encrypted files follow this structure:
+Secure Backup currently uses:
 
-```
-[HEADER][CIPHERTEXT]
-```
-
-### 2.1 Header Layout
-
-| Offset | Size (bytes) | Field      | Description                    |
-| ------ | ------------ | ---------- | ------------------------------ |
-| 0      | 4            | Magic      | ASCII "SB01"                   |
-| 4      | 16           | Salt       | Random salt for key derivation |
-| 20     | 12           | Nonce      | AES-GCM nonce                  |
-| 32     | 16           | Tag        | Authentication tag             |
-| 48     | N            | Ciphertext | Encrypted file data            |
+| Component | Algorithm |
+|---|---|
+| Encryption | AES-256-GCM |
+| KDF | PBKDF2-HMAC-SHA256 |
+| Key Size | 32 bytes |
+| Salt | 16 bytes |
+| Nonce | 12 bytes |
+| Tag | 16 bytes |
 
 ---
 
-## 3. Cryptographic Details
+## Supported Formats
 
-### 3.1 Cipher
-
-* Algorithm: AES-256-GCM
-* Mode: Authenticated Encryption
-* Key Size: 32 bytes
-* Nonce Size: 12 bytes
-* Tag Size: 16 bytes
+| Format | Status |
+|---|---|
+| SB01 | Legacy |
+| SB02 | Current |
+| SB03 | Draft |
 
 ---
 
-### 3.2 Key Derivation Function (KDF)
+## Compatibility Rules
 
-* Algorithm: PBKDF2-HMAC-SHA256
-* Iterations: 200,000
-* Salt: 16 random bytes
-* Output length: 32 bytes
-
----
-
-### 3.3 Key Derivation Process
-
-```
-key = PBKDF2(password, salt, iterations=200000, dkLen=32)
-```
+- New formats must use new MAGIC identifiers
+- Older formats should remain decryptable when possible
+- Parsers must reject unsupported versions
+- Binary layouts must remain deterministic
 
 ---
 
-## 4. Encryption Process
+## Security Model
 
-1. Generate random salt (16 bytes)
-2. Derive key from password using PBKDF2
-3. Generate random nonce (12 bytes)
-4. Encrypt plaintext using AES-256-GCM
-5. Extract:
+Secure Backup guarantees:
 
-   * Ciphertext
-   * Authentication tag
-6. Construct file:
+- confidentiality
+- integrity
+- tamper detection
 
-```
-[Magic][Salt][Nonce][Tag][Ciphertext]
-```
+Secure Backup does NOT guarantee:
+
+- password recovery
+- plausible deniability
+- metadata secrecy
 
 ---
 
-## 5. Decryption Process
+## Future Extensions
 
-1. Read header fields:
+Planned future features:
 
-   * Magic
-   * Salt
-   * Nonce
-   * Tag
-2. Validate Magic == "SB01"
-3. Derive key using password and salt
-4. Decrypt using AES-256-GCM
-5. Verify authentication tag
-6. If verification fails:
-
-   * Reject file
-   * Do NOT output partial data
+- streaming encryption
+- chunked formats
+- compression support
+- secure viewers
+- encrypted virtual filesystem
 
 ---
 
-## 6. Error Handling
+## Compliance
 
-### 6.1 Invalid Magic
+Implementations claiming compatibility MUST:
 
-* File is not a valid Secure Backup file
-
-### 6.2 Authentication Failure
-
-* Possible causes:
-
-  * Incorrect password
-  * Corrupted file
-  * Tampering attempt
-
-### 6.3 Truncated File
-
-* If file size < 48 bytes → invalid
-
----
-
-## 7. Security Requirements
-
-* Salt MUST be randomly generated per file
-* Nonce MUST be unique per encryption
-* Password MUST NOT be stored
-* Key MUST NOT be reused across different salts
-* Tag MUST always be verified before output
-
----
-
-## 8. File Extension
-
-Recommended extension:
-
-```
-.enc
-```
-
----
-
-## 9. Versioning
-
-* Current version: `SB01`
-* Future versions must:
-
-  * Change Magic (e.g., `SB02`)
-  * Maintain backward compatibility where possible
-
----
-
-## 10. Interoperability
-
-Implementations in different languages MUST:
-
-* Follow this exact binary layout
-* Use identical cryptographic parameters
-* Produce compatible output
-
----
-
-## 11. Limitations (SB01)
-
-* Not optimized for streaming large files
-* Entire file may be processed in memory (implementation-dependent)
-* No metadata (filename, type, etc.)
-
----
-
-## 12. Future Extensions
-
-Planned improvements for future versions:
-
-* Streaming encryption support
-* Chunk-based format
-* Metadata section (optional)
-* Key wrapping (envelope encryption)
-* Compression support
-
----
-
-## 13. Example (Conceptual)
-
-```
-SB01
-│
-├── Salt (16 bytes)
-├── Nonce (12 bytes)
-├── Tag (16 bytes)
-└── Ciphertext (...)
-```
-
----
-
-## 14. Compliance
-
-Any implementation claiming compatibility with Secure Backup MUST:
-
-* Correctly parse SB01 files
-* Successfully decrypt files generated by reference implementation
-* Reject invalid or tampered files
-
----
+- correctly parse official formats
+- use identical cryptographic parameters
+- reject invalid authentication tags
+- pass official test vectors
