@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 from cryptography.exceptions import InvalidTag
-
+from pathlib import Path
 from secure_backup.kdf import generate_salt, derive_key
 from secure_backup.crypto import (
     generate_nonce,
@@ -39,6 +39,10 @@ def encrypt_file(
 ):
     if not os.path.exists(input_path):
         print("Input file not found")
+        return
+    
+    if Path(input_path).is_dir():
+        print("Directory encryption is not supported yet")
         return
 
     output_path = resolve_encrypt_output(
@@ -90,6 +94,10 @@ def decrypt_file(
 ):
     if not os.path.exists(input_path):
         print("Encrypted file not found")
+        return
+    
+    if Path(input_path).is_dir():
+        print("Input path cannot be a directory")
         return
 
     password = getpass.getpass("Password: ")
