@@ -1,4 +1,4 @@
-# 🔐 Secure Backup
+# Secure Backup
 
 CLI tool for local file encryption and decryption using password-based cryptography.
 
@@ -6,36 +6,54 @@ CLI tool for local file encryption and decryption using password-based cryptogra
 
 ## Overview
 
-**Secure Backup** is a command-line application that allows you to securely encrypt and decrypt files using a password.
+Secure Backup is a command-line application designed to securely encrypt and decrypt files locally using password-based encryption.
 
-It is designed to generate self-contained encrypted files (`.enc`) that can be safely stored, shared, or backed up without exposing their contents.
+The project focuses on:
 
-> Encryption happens **locally** — your data is never sent anywhere.
+- correctness
+- portability
+- format stability
+- future interoperability across implementations
+
+Encrypted files are self-contained and can safely be stored, shared, or backed up.
+
+> Encryption happens locally. Data is never uploaded or transmitted.
 
 ---
 
-## ⚙️ Features
+## Features
 
-* Password-based encryption
-* Self-contained encrypted file format (`SB01`)
-* Authenticated encryption (AES-256-GCM)
-* Portable `.enc` files
-* Designed for cross-language compatibility (Python → C++)
-* Future-ready for cloud integrations
+- Password-based encryption
+- AES-256-GCM authenticated encryption
+- PBKDF2-HMAC-SHA256 key derivation
+- Portable `.enc` encrypted files
+- Embedded metadata support (SB02)
+- Automatic filename restoration
+- Multi-format parser architecture
+- Cross-language compatibility design
+- Future-ready streaming architecture
+
+---
+
+## Supported Formats
+
+| Format | Status | Features |
+|--------|--------|----------|
+| SB01 | Legacy | Basic encryption |
+| SB02 | Current | Metadata support |
+| SB03 | Planned | Streaming encryption |
 
 ---
 
 ## How It Works
 
-1. You provide a file and a password
-2. A secure key is derived from the password (PBKDF2)
-3. The file is encrypted using AES-256-GCM
-4. A `.enc` file is generated containing:
+1. User provides a file and password
+2. A secure key is derived using PBKDF2
+3. File is encrypted using AES-256-GCM
+4. Metadata and cryptographic parameters are embedded
+5. A portable `.enc` file is generated
 
-   * metadata (salt, nonce, tag)
-   * encrypted data
-
-To decrypt, the same password is required.
+Decryption requires the original password.
 
 ---
 
@@ -67,50 +85,90 @@ pip install -r requirements.txt
 
 ---
 
+### 4. Install project
+
+```bash
+pip install -e ".[dev]"
+```
+
+---
+
 ## Usage
 
 ### Encrypt a file
 
 ```bash
-python -m secure_backup.cli encrypt archivo.mp4 -o archivo.enc
+python -m secure_backup.cli encrypt photo.png
+```
+##### Default output:
+
+```bash
+photo.enc
+```
+
+#### Encrypt with custom encrypted filename
+
+```bash
+python -m secure_backup.cli encrypt photo.png --name backup-secret
+```
+
+##### output:
+
+```bash
+backup-secret.enc
+```
+
+#### Encrypt to custom directory
+
+```bash
+python -m secure_backup.cli encrypt photo.png -o /tmp/
 ```
 
 You will be prompted for a password.
 
 ---
 
-### Decrypt a file
+### Decrypt file
 
 ```bash
-python -m secure_backup.cli decrypt archivo.enc -o salida.mp4
+python -m secure_backup.cli decrypt photo.enc
+```
+SB02 automatically restores original filename.
+
+#### Decrypt with custom output name
+
+```bash
+python -m secure_backup.cli decrypt photo.enc --name recovered.png
 ```
 
----
+#### Decrypt to custom directory
 
-## File Format (SB01)
-
-Encrypted files follow a structured binary format:
-
-| Offset | Size | Description    |
-| ------ | ---- | -------------- |
-| 0      | 4    | Magic (`SB01`) |
-| 4      | 16   | Salt           |
-| 20     | 12   | Nonce          |
-| 32     | 16   | Auth Tag       |
-| 48     | ...  | Ciphertext     |
+```bash
+python -m secure_backup.cli decrypt photo.enc -o /tmp/
+```
 
 ---
 
 ## Project Structure
 
 ```bash
-secure-backup/
-├── docs/              # specifications
-├── python/            # Python prototype
-│   └── secure_backup/
-├── cpp/               # future C++ implementation
-├── test_vectors/      # interoperability tests
-└── README.md
+   secure-backup/
+   ├── docs/
+   │   ├── cli.md
+   │   ├── crypto.md
+   │   ├── spec.md
+   │   └── formats/
+   │       ├── sb01.md
+   │       ├── sb02.md
+   │       └── sb03-draft.md
+   │
+   ├── python/
+   │   └── secure_backup/
+   │
+   ├── tests/
+   ├── test_vectors/
+   ├── scripts/
+   └── README.md
 ```
 
 ---
@@ -119,14 +177,17 @@ secure-backup/
 
 ### Current
 
-* File encryption/decryption (CLI)
-* Password-based key derivation
-* Stable file format (SB01)
+* SB02 metadata format
+* Multi-format parser
+* CLI encryption/decryption
+* Automatic filename restoration
+* Deterministic test vectors
 
 ### Next
 
-* Streaming encryption (large files)
-* Improved CLI UX
+* Streaming encryption
+* Large-file support
+* Low-memory encryption pipeline
 
 ### Future
 
@@ -142,6 +203,7 @@ secure-backup/
 * Password is **never stored**
 * Each file uses a unique salt and nonce
 * Authentication ensures file integrity
+* Corrupted or tampered files are rejected
 * If decryption fails → file is tampered or password is incorrect
 
 > If you lose your password, your data **cannot be recovered**
@@ -151,9 +213,9 @@ secure-backup/
 ## Design Philosophy
 
 * Keep cryptography **simple and correct**
-* Separate core logic from interfaces (CLI / GUI)
-* Ensure compatibility across implementations
-* Avoid exposing sensitive data at all times
+* Design stable binary formats
+* Separate protocol from implementation
+* Prioritize compatibility and maintainability
 
 ---
 
@@ -176,3 +238,5 @@ MIT License
 ## Author
 
 Built as a secure backup and encryption system with a focus on correctness, portability, and future scalability.
+
+---
